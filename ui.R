@@ -1,6 +1,7 @@
 ui <- fluidPage(
 
   navbarPage(
+    theme = shinytheme('cerulean'),
 
     "Suivi musculation",
     tabPanel("Input",
@@ -38,17 +39,10 @@ ui <- fluidPage(
                                          icon = "fas fa-dumbbell",
                                          style = "danger")
                               ),
-                       # column(3,
-                       #        valueBox("series_box",
-                       #                 subtitle = '',
-                       #                 color = 'orange',
-                       #                 icon = "tachometer")),
-                       # column(3,
-                       #        valueBox("poids_box",
-                       #                 subtitle = '',
-                       #                 color = 'red',
-                       #                 icon = "tachometer"))
-                       # ),
+                       hr(),
+                       fluidRow(column(12,
+                         highchartOutput("time_content")
+                       )),
 
                        hr(),
                        fluidRow(

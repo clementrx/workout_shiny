@@ -11,8 +11,42 @@ server = function(input, output){
 
     df <- read_excel(paste("test.xlsx", sep=""), 1)
     df <- df %>%
-      rename(poids = `charge (kg)`)
+      rename(poids = `charge (kg)`) %>%
+      mutate(date = as.Date(date),
+             serie = as.integer(serie),
+             reps = as.integer(reps),
+             poids = as.numeric(poids))
 
+    df
+
+  })
+
+  data_time <- reactive({
+
+    data() %>%
+      group_by(date) %>%
+      summarise(exercices = n_distinct(exercice),
+                series = sum(serie, na.rm = T),
+                poids = sum(poids, na.rm = T)) %>%
+      ungroup() %>%
+      pivot_longer(!c(date, poids), names_to = 'gr', values_to = 'value')
+
+  })
+
+  output$time_content <- renderHighchart({
+    highchart()%>%
+      hc_xAxis(type = "datetime", labels = list(format = '{value:%m/%d}')) %>%
+      hc_yAxis_multiples(list(title = list(text = "Exercices / Séries"),
+                              labels=list(format = '{value}'),
+                              showFirstLabel = TRUE,
+                              showLastLabel=TRUE,
+                              opposite = FALSE),
+                         list(title = list(text = "Charges (Kg)"),
+                              labels = list(format = "{value}"),showLastLabel = FALSE, opposite = TRUE)) %>%
+      hc_plotOptions(column = list(stacking = "normal")) %>%
+      hc_add_series(data_time(),type="column",hcaes(x=date,y=value, group = 'gr'),yAxis=0) %>%
+      hc_add_series(data_time(),type="line",hcaes(x=date,y=poids), yAxis = 1, name = 'Charge')
+    hc
   })
 
   output$contents <- renderReactable({
@@ -24,11 +58,13 @@ server = function(input, output){
                 min_serie = min(serie, na.rm = T),
                 mean_serie = mean(serie, na.rm = T),
                 max_serie = max(serie, na.rm = T)) %>%
+      ungroup() %>%
       reactable(
         theme = clean(),
         pagination = FALSE,
         columns = list(
           min_poids = colDef(
+            name = 'Poids mini',
             cell = data_bars(
               data = .,
               fill_color = c('#FFF2D9','#FFE1A6','#FFCB66','#FFB627'),
@@ -38,6 +74,7 @@ server = function(input, output){
             )),
 
           mean_poids = colDef(
+            name = 'Poids moyen',
             cell = data_bars(
               data = .,
               fill_color = c('#FFF3D9','#FFE1A6','#FFCB66','#FFB627'),
@@ -47,6 +84,7 @@ server = function(input, output){
             )),
 
           max_poids = colDef(
+            name = 'Poids max',
             cell = data_bars(
               data = .,
               fill_color = c('#FFF3D9','#FFE1A6','#FFCB66','#FFB627'),
@@ -56,6 +94,7 @@ server = function(input, output){
             )),
 
           min_serie = colDef(
+            name = 'Serie mini',
             cell = data_bars(
               data = .,
               fill_color = c('#FFF2D9','#FFE1A6','#FFCB66','#FFB627'),
@@ -65,6 +104,7 @@ server = function(input, output){
             )),
 
           mean_serie = colDef(
+            name = 'Serie moyen',
             cell = data_bars(
               data = .,
               fill_color = c('#FFF3D9','#FFE1A6','#FFCB66','#FFB627'),
@@ -74,6 +114,7 @@ server = function(input, output){
             )),
 
           max_serie = colDef(
+            name = 'Serie max',
             cell = data_bars(
               data = .,
               fill_color = c('#FFF3D9','#FFE1A6','#FFCB66','#FFB627'),
@@ -88,15 +129,6 @@ server = function(input, output){
 
     tb
 
-  })
-
-  output$evol <- renderPlot({
-    ggplot(data(),
-           aes(x = date,
-               y = poids,
-               color = exercice)) +
-      geom_point() +
-      geom_line()
   })
 
   output$ex_box <- renderText({

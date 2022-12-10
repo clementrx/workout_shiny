@@ -1,0 +1,64 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+
+df <- read_excel(paste("test.xlsx", sep=""), 1)
+df <- df %>%
+      rename(poids = `charge (kg)`) %>%
+      mutate(
+        date = as.Date(date),
+        serie = as.integer(serie),
+             reps = as.integer(reps),
+             poids = as.numeric(poids))
+
+```
+
+```{r}
+
+content <- df %>%
+      group_by(exercice) %>%
+      summarise(min_poids = min(poids, na.rm = T),
+                mean_poids = mean(poids, na.rm = T),
+                max_poids = max(poids, na.rm = T),
+                min_serie = min(serie, na.rm = T),
+                mean_serie = mean(serie, na.rm = T),
+                max_serie = max(serie, na.rm = T)) %>% 
+  ungroup()
+
+```
+
+```{r}
+
+time_content <- df %>% 
+  group_by(date) %>% 
+  summarise(exercices = n_distinct(exercice),
+            series = sum(serie, na.rm = T),
+            poids = sum(poids, na.rm = T)) %>% 
+  ungroup() %>% 
+  pivot_longer(!c(date, poids), names_to = 'gr', values_to = 'value')
+
+
+hc <- highchart()%>%
+  hc_xAxis(type = "datetime", labels = list(format = '{value:%m/%d}')) %>%
+hc_yAxis_multiples(list(title = list(text = "Exercices / Séries"),
+labels=list(format = '{value}'),
+showFirstLabel = TRUE,
+showLastLabel=TRUE,
+opposite = FALSE),
+list(title = list(text = "Charges (Kg)"),
+labels = list(format = "{value}"),showLastLabel = FALSE, opposite = TRUE)) %>%
+hc_plotOptions(column = list(stacking = "normal")) %>%
+hc_add_series(time_content,type="column",hcaes(x=date,y=value, group = 'gr'),yAxis=0) %>%
+hc_add_series(time_content,type="line",hcaes(x=date,y=poids), yAxis = 1, name = 'Charge')
+hc
+
+```
+
+
+
+
