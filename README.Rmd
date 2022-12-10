@@ -1,0 +1,31 @@
+---
+title: Workout Dashboard ![](https://geps.dev/progress/10)
+output: 
+    github_document:
+        toc: true # table of content true
+        toc_depth: 4  # upto three depths of headings (specified by #, ## and ###)
+---
+
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+## Objectif
+
+Le but de ce dashboard est d'analyser l'évolution lors des différents entrainements de musculation. Mais également d'avoir un indicateur sur l'évolution de ses charges maximum, ce qui peut aider lors de la création de programme.
+
+### 0 - Installation
+
+### 1 - Ecriture du programme de musculation
+
+### 2 - Indicateurs
+
+
