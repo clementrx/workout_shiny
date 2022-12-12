@@ -3,8 +3,8 @@ ui <- fluidPage(
   navbarPage(
     theme = shinytheme('cerulean'),
 
-    "Suivi musculation",
-    tabPanel("Input",
+    "Suivi musculation (Beta)",
+    tabPanel("Resumé",
 
              sidebarPanel(width = 3,
                           fileInput('file1', 'Importer un fichier .xlsx',
@@ -37,7 +37,7 @@ ui <- fluidPage(
                                           textOutput('poids_box'),
                                          width = 4,
                                          icon = "fas fa-dumbbell",
-                                         style = "danger")
+                                         style = "warning")
                               ),
                        hr(),
                        fluidRow(column(12,
@@ -51,8 +51,27 @@ ui <- fluidPage(
                        hr(),
                        h3('Estimation des max'),
                        fluidRow(
-                                reactableOutput("table_max")),
-                       ))
+                                reactableOutput("table_max"))
+                       )),
+
+    tabPanel("Evolution",
+
+             sidebarPanel(width = 3,
+                          uiOutput('exercice_filter'),
+
+                          br(),
+                          br()
+             ),
+
+             mainPanel(width = 9,
+
+                       # hr(),
+                       fluidRow(column(12,
+                                       highchartOutput("exercice_plot"))),
+                       hr(),
+                       fluidRow(reactableOutput("view_ex"))
+
+             ))
 
 
   )

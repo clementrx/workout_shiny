@@ -45,8 +45,8 @@ server = function(input, output){
                               labels = list(format = "{value}"),showLastLabel = FALSE, opposite = TRUE)) %>%
       hc_plotOptions(column = list(stacking = "normal")) %>%
       hc_add_series(data_time(),type="column",hcaes(x=date,y=value, group = 'gr'),yAxis=0) %>%
-      hc_add_series(data_time(),type="line",hcaes(x=date,y=poids), yAxis = 1, name = 'Charge')
-    hc
+      hc_add_series(data_time(),type="line",hcaes(x=date,y=poids), yAxis = 1, name = 'Charge',  color = 'orange')
+
   })
 
   output$contents <- renderReactable({
@@ -154,7 +154,8 @@ server = function(input, output){
       group_by(exercice) %>%
       summarise(max = max(max_estimated, na.rm = T)) %>%
       ungroup() %>%
-      mutate('80%' = max*0.8,
+      mutate('90%' = max*0.9,
+             '80%' = max*0.8,
              '70%' = max*0.7,
              '60%' = max*0.6,
              '50%' = max*0.5,
@@ -175,6 +176,66 @@ server = function(input, output){
         max = colDef(maxWidth = 50)
       )
     )
+
+  })
+
+  output$exercice_filter <- renderPrint({
+    res <- lapply(1:5, function(i) input[[paste0('a', i)]])
+    str(setNames(res, paste0('a', 1:5)))
+  })
+
+  output$exercice_filter = renderUI({
+    my_ex = unique(data()$exercice)
+    selectInput('exercice_name', 'Exercice', my_ex)
+  })
+
+  output$exercice_plot <- renderHighchart({
+
+  data_plot_ex <- data() %>%
+    filter(exercice == input$exercice_name) %>%
+    pivot_longer(!c(date, exercice, poids), names_to = 'gr', values_to = 'value')
+
+  hc <- highchart()%>%
+    hc_xAxis(type = "datetime", labels = list(format = '{value:%m/%d}')) %>%
+    hc_yAxis_multiples(list(title = list(text = "Exercices / Séries"),
+                            labels=list(format = '{value}'),
+                            showFirstLabel = TRUE,
+                            showLastLabel=TRUE,
+                            opposite = FALSE),
+                       list(title = list(text = "Charges (Kg)"),
+                            labels = list(format = "{value}"),showLastLabel = FALSE, opposite = TRUE)) %>%
+    # hc_plotOptions(column = list(stacking = "normal")) %>%
+    hc_add_series(data_plot_ex,type="column",hcaes(x=date,y=value, group = 'gr'),yAxis=0) %>%
+    hc_add_series(data_plot_ex,type="line",hcaes(x=date,y=poids), yAxis = 1, name = 'Charge')
+
+  hc
+
+
+  })
+
+  output$view_ex <- renderReactable({
+
+    data_plot_ex <- data() %>%
+      filter(exercice == input$exercice_name) %>%
+      mutate(max = round(poids / (1.0279 - (0.0278*reps)),1)) %>%
+      arrange(date) %>%
+      mutate(evol = round((max - lag(max))/max,2),
+             evol = ifelse(is.na(evol), 0, evol))
+
+    reactable(data_plot_ex, columns = list(
+      evol = colDef(
+        style = function(value) {
+          if (value > 0) {
+            color <- "#008000"
+          } else if (value < 0) {
+            color <- "#e00000"
+          } else {
+            color <- "#777"
+          }
+          list(color = color, fontWeight = "bold")
+        }
+      )
+    ))
 
   })
 
