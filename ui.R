@@ -10,14 +10,31 @@ ui <- fluidPage(
                           fileInput('file1', 'Importer un fichier .xlsx',
                                     accept = c(".xlsx")
                           ),
-                          column(12,
-                                 'Ici on mettera des filtres'),
-                          column(6,
-                                 "Ou ici"),
-                          column(6,
-                                 'Ou la'),
+
+                          downloadLink("downloadData", "Télécharger le template"),
+                          # column(12,
+                          #        'Ici on mettera des filtres'),
+                          # column(6,
+                          #        "Ou ici"),
+                          # column(6,
+                          #        'Ou la'),
 
                           br(),
+                          br(),
+                          br(),
+                          br(),
+                          br(),
+                          dateRangeInput("daterange",
+                                         "Période : " ,
+                                         start = today()-90,
+                                         end   = today(),
+                                         # min = NULL,
+                                         # max = NULL,
+                                         format = "yyyy-mm-dd",
+                                         # startview = "month",
+                                         # weekstart = 0,
+                                         language = "fr",
+                                         separator = " à "),
                           br()
                           ),
 
@@ -46,12 +63,7 @@ ui <- fluidPage(
 
                        hr(),
                        fluidRow(
-                         reactableOutput("contents")),
-                       hr(),
-                       hr(),
-                       h3('Estimation des max'),
-                       fluidRow(
-                                reactableOutput("table_max"))
+                         reactableOutput("contents"))
                        )),
 
     tabPanel("Evolution",
@@ -70,6 +82,48 @@ ui <- fluidPage(
                                        highchartOutput("exercice_plot"))),
                        hr(),
                        fluidRow(reactableOutput("view_ex"))
+
+             )),
+
+    tabPanel("Estimation des max",
+
+             # sidebarPanel(width = 3,
+             #              # uiOutput('exercice_filter'),
+             #
+             #              br(),
+             #              br()
+             # ),
+
+             mainPanel(width = '100%',
+
+                       fluidRow(reactableOutput("table_max"))
+
+             )),
+
+    tabPanel("Calcul de max",
+
+             sidebarPanel(width = 3,
+                          numericInput('poids_inputs',
+                                       'Poids (kg):',
+                                       50,
+                                       min = 1,
+                                       max = 10000),
+                          br(),
+                          numericInput('reps_inputs',
+                                       'Répétition(s):',
+                                       10,
+                                       min = 1,
+                                       max = 20),
+                          # uiOutput('exercice_filter'),
+
+                          br(),
+                          br()
+             ),
+
+             mainPanel(width = 9,
+
+                       fluidRow(reactableOutput("value_max")),
+                       fluidRow(highchartOutput("plot_opti"))
 
              ))
 

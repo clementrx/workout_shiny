@@ -1,31 +1,58 @@
 server = function(input, output){
 
+
+  df_export <- import_fichier(here('test'))
+
+  df_template <- df_export %>%
+    mutate(date = as.character(date)) %>%
+    rename(`charge (kg)` = 'poids')
+
+  wb <- createWorkbook()
+  addWorksheet(wb, sheetName = "sheet1")
+  writeData(wb, sheet = 1, x = df_template, startCol = 1, startRow = 1)
+
   data <- reactive({
-    # inFile <- input$file1
-    #
-    # if(is.null(inFile))
-    #   return(NULL)
-    # file.rename(inFile$datapath,
-    #             paste(inFile$datapath, ".xlsx", sep=""))
-    # read_excel(paste(inFile$datapath, ".xlsx", sep=""), 1)
+    inFile <- input$file1
 
-    df <- read_excel(paste("test.xlsx", sep=""), 1)
+    if(is.null(inFile))
+      # return(NULL)
+
+      df_export <- df_export %>%
+        filter(date >= input$daterange[1],
+               date <= input$daterange[2])
+
+      return(df_export)
+
+    file.rename(inFile$datapath,
+                paste(inFile$datapath, ".xlsx", sep=""))
+
+    df <- import_fichier(inFile$datapath)
     df <- df %>%
-      rename(poids = `charge (kg)`) %>%
-      mutate(date = as.Date(date),
-             serie = as.integer(serie),
-             reps = as.integer(reps),
-             poids = as.numeric(poids))
+      filter(date >= input$daterange[1],
+             date <= input$daterange[2])
 
-    df
+    # df <- read_excel(paste(inFile$datapath, ".xlsx", sep=""), 1)
+
 
   })
+
+
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste("template.xlsx")
+    },
+    content = function(file) {
+      # write.csv(df_export, file, row.names = FALSE)
+      saveWorkbook(wb, file = file, overwrite = TRUE)
+      # write.xlsx(df_export, file, row.names = FALSE)
+    }
+  )
 
   data_time <- reactive({
 
     data() %>%
       group_by(date) %>%
-      summarise(exercices = n_distinct(exercice),
+      summarise(exercices = n_distinct(exercice, na.rm = T),
                 series = sum(serie, na.rm = T),
                 poids = sum(poids, na.rm = T)) %>%
       ungroup() %>%
@@ -132,7 +159,7 @@ server = function(input, output){
   })
 
   output$ex_box <- renderText({
-    paste0(length(unique(data()$exercice)))
+    paste0(length(data()$exercice))
   })
 
     output$series_box <- renderText({
@@ -219,8 +246,9 @@ server = function(input, output){
       filter(exercice == input$exercice_name) %>%
       mutate(max = round(poids / (1.0279 - (0.0278*reps)),1)) %>%
       arrange(date) %>%
-      mutate(evol = round((max - lag(max))/max,2),
-             evol = ifelse(is.na(evol), 0, evol))
+      mutate(evol = round((max - lag(max))/max,3),
+             evol = ifelse(is.na(evol), 0, evol)) %>%
+      arrange(desc(date))
 
     reactable(data_plot_ex, columns = list(
       evol = colDef(
@@ -233,12 +261,65 @@ server = function(input, output){
             color <- "#777"
           }
           list(color = color, fontWeight = "bold")
-        }
+        },
+        format = colFormat(percent = TRUE)
       )
     ))
 
   })
 
+  output$value_max <- renderReactable({
+
+    max <- round(input$poids_inputs  / (1.0279 - (0.0278*input$reps_inputs)),1)
+
+    df_max <- data.frame(max,
+                         max*0.9,
+                         max*0.8,
+                         max*0.7,
+                         max*0.6,
+                         max*0.5,
+                         max*0.4,
+                         max*0.3
+    )
+    colnames(df_max) <- c('100%',
+                          '90%',
+                          '80%',
+                          '70%',
+                          '60%',
+                          '50%',
+                          '40%',
+                          '30%')
+
+    reactable(
+      df_max,
+      theme = clean(centered = TRUE)
+    )
+
+    })
+
+  output$plot_opti <- renderHighchart({
+
+    max <- round(input$poids_inputs  / (1.0279 - (0.0278*input$reps_inputs)),1)
+
+    poids_opti <- c()
+    reps <- c()
+
+    for( i in (1:20)){
+      reps <- c(reps, i)
+      compute_poids <- round(max*(1.0279 - (0.0278*i)), 2)
+      poids_opti <- c(poids_opti, compute_poids)
+    }
+
+    df_opti <- data.frame(reps, poids_opti)
+
+    hc <- highchart()%>%
+      hc_xAxis(title = list(text = 'Nombre de répétitions')) %>%
+      hc_yAxis(title = list(text = 'Charge (kg)')) %>%
+      hc_add_series(df_opti,type="column",hcaes(x=reps,y=poids_opti),yAxis=0, name = 'Charge optimum')
+
+    hc
+
+  })
 
 }
 

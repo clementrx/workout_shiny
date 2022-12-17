@@ -6,15 +6,9 @@ editor_options:
 ---
 
 ```{r}
+path <- "/Users/clementrieux/Documents/workout_analysis/test"
+df <- import_fichier(path)
 
-df <- read_excel(paste("test.xlsx", sep=""), 1)
-df <- df %>%
-      rename(poids = `charge (kg)`) %>%
-      mutate(
-        date = as.Date(date),
-        serie = as.integer(serie),
-             reps = as.integer(reps),
-             poids = as.numeric(poids))
 
 ```
 
@@ -90,5 +84,38 @@ data_plot_ex <- df %>% filter(exercice == 'DC') %>%
 
 ```
 
+```{r}
+
+rep = 10
+poids = 50
+max <- round(poids / (1.0279 - (0.0278*rep)),1)
+
+poids_opti <- c()
+reps <- c()
+
+for( i in (1:20)){
+  reps <- c(reps, i)
+  compute_poids <- round(max*(1.0279 - (0.0278*i)), 2)
+  poids_opti <- c(poids_opti, compute_poids)
+}
+
+df_opti <- data.frame(reps, poids_opti)
+
+
+hc <- highchart()%>%
+    # hc_xAxis(type = "datetime", labels = list(format = '{value:%m/%d}')) %>%
+    # hc_yAxis_multiples(list(title = list(text = "Exercices / Séries"),
+    #                         labels=list(format = '{value}'),
+    #                         showFirstLabel = TRUE,
+    #                         showLastLabel=TRUE,
+    #                         opposite = FALSE),
+    #                    list(title = list(text = "Charges (Kg)"),
+    #                         labels = list(format = "{value}"),showLastLabel = FALSE, opposite = TRUE)) %>%
+    # hc_plotOptions(column = list(stacking = "normal")) %>%
+    hc_add_series(df_opti,type="column",hcaes(x=reps,y=poids_opti),yAxis=0)
+
+hc
+
+```
 
 
