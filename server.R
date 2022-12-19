@@ -1,7 +1,7 @@
 server = function(input, output){
 
 
-  df_export <- import_fichier(here('test'))
+  df_export <- import_fichier(here('test.xlsx'))
 
   df_template <- df_export %>%
     mutate(date = as.character(date)) %>%
@@ -14,7 +14,8 @@ server = function(input, output){
   data <- reactive({
     inFile <- input$file1
 
-    if(is.null(inFile))
+    if(is.null(inFile)){
+
       # return(NULL)
 
       df_export <- df_export %>%
@@ -22,9 +23,8 @@ server = function(input, output){
                date <= input$daterange[2])
 
       return(df_export)
+    }
 
-    file.rename(inFile$datapath,
-                paste(inFile$datapath, ".xlsx", sep=""))
 
     df <- import_fichier(inFile$datapath)
     df <- df %>%

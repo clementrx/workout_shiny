@@ -6,7 +6,7 @@ editor_options:
 ---
 
 ```{r}
-path <- "/Users/clementrieux/Documents/workout_analysis/test"
+path <- here("test.xlsx")
 df <- import_fichier(path)
 
 

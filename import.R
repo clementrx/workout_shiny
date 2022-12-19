@@ -1,6 +1,6 @@
 import_fichier <- function(path){
 
-  df <- read_excel(paste(path, ".xlsx", sep=""), 1)
+  df <- read_excel(path, 1)
 
   if(is.character(df$serie) == T){
     df$serie<- as.numeric(df$serie)
@@ -25,5 +25,9 @@ import_fichier <- function(path){
   return(df)
 
 }
+
+
+
+
 
 # test <- import_fichier('/Users/clementrieux/Documents/workout_analysis/test')
