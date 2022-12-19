@@ -5,9 +5,9 @@ account: clementrx
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 7878480
-bundleId: 6648693
+bundleId: 6654590
 url: https://clementrx.shinyapps.io/workout_analysis/
-when: 1671297953.99768
-lastSyncTime: 1671297953.99769
+when: 1671472278.46523
+lastSyncTime: 1671472278.46526
 asMultiple: FALSE
 asStatic: FALSE

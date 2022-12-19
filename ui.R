@@ -59,11 +59,11 @@ ui <- fluidPage(
                        hr(),
                        fluidRow(column(12,
                          highchartOutput("time_content")
-                       )),
+                       ))
 
-                       hr(),
-                       fluidRow(
-                         reactableOutput("contents"))
+                       # hr(),
+                       # fluidRow(
+                         # reactableOutput("contents"))
                        )),
 
     tabPanel("Evolution",

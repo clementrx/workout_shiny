@@ -15,8 +15,11 @@ import_fichier <- function(path){
   }
 
   df <- df %>%
-    na.omit() %>%
     rename(poids = `charge (kg)`) %>%
+    mutate(poids = ifelse(is.na(poids),
+                          1,
+                          poids)) %>%
+    na.omit() %>%
     mutate(date = as.Date(date),
            serie = as.integer(serie),
            reps = as.integer(reps),

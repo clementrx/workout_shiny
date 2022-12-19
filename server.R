@@ -48,16 +48,42 @@ server = function(input, output){
     }
   )
 
+  output$ex_box <- renderText({
+    paste0(length(unique(data()$exercice)))
+  })
+
+  output$series_box <- renderText({
+    paste0(sum(data()$serie))
+  })
+
+  output$poids_box <- renderText({
+    paste0(sum(data()$poids), ' Kg')
+  })
+
   data_time <- reactive({
 
     data() %>%
+      mutate(poids_total = serie*reps*poids) %>%
       group_by(date) %>%
       summarise(exercices = n_distinct(exercice, na.rm = T),
                 series = sum(serie, na.rm = T),
-                poids = sum(poids, na.rm = T)) %>%
+                repetitions = sum(serie*reps, na.rm = T),
+                poids = sum(poids_total, na.rm = T)) %>%
       ungroup() %>%
       pivot_longer(!c(date, poids), names_to = 'gr', values_to = 'value')
 
+  })
+
+  output$ex_box <- renderText({
+    paste0(length(unique(data()$exercice)))
+  })
+
+  output$series_box <- renderText({
+    paste0(sum(data()$serie))
+  })
+
+  output$poids_box <- renderText({
+    paste0(sum(data()$poids*data()$serie*data()$reps), ' Kg')
   })
 
   output$time_content <- renderHighchart({
@@ -158,17 +184,7 @@ server = function(input, output){
 
   })
 
-  output$ex_box <- renderText({
-    paste0(length(data()$exercice))
-  })
 
-    output$series_box <- renderText({
-      paste0(sum(data()$serie))
-  })
-
-  output$poids_box <- renderText({
-      paste0(sum(data()$poids), ' Kg')
-  })
 
 
   output$table_max <- renderReactable({
@@ -201,15 +217,12 @@ server = function(input, output){
             colors = viridis::mako(5)),
           format = colFormat(digits = 1)),
         max = colDef(maxWidth = 50)
-      )
+      ),
+      defaultPageSize = 30
     )
 
   })
 
-  output$exercice_filter <- renderPrint({
-    res <- lapply(1:5, function(i) input[[paste0('a', i)]])
-    str(setNames(res, paste0('a', 1:5)))
-  })
 
   output$exercice_filter = renderUI({
     my_ex = unique(data()$exercice)
@@ -220,7 +233,14 @@ server = function(input, output){
 
   data_plot_ex <- data() %>%
     filter(exercice == input$exercice_name) %>%
-    pivot_longer(!c(date, exercice, poids), names_to = 'gr', values_to = 'value')
+    mutate(poids_total = serie*reps*poids) %>%
+    group_by(date) %>%
+    summarise(exercices = n_distinct(exercice, na.rm = T),
+              serie_tot = sum(serie, na.rm = T),
+              reps_tot = sum(serie*reps, na.rm = T),
+              poids = sum(poids_total, na.rm = T)) %>%
+    ungroup() %>%
+    pivot_longer(!c(date, poids), names_to = 'gr', values_to = 'value')
 
   hc <- highchart()%>%
     hc_xAxis(type = "datetime", labels = list(format = '{value:%m/%d}')) %>%
@@ -244,10 +264,18 @@ server = function(input, output){
 
     data_plot_ex <- data() %>%
       filter(exercice == input$exercice_name) %>%
-      mutate(max = round(poids / (1.0279 - (0.0278*reps)),1)) %>%
+      mutate(poids_total = serie*reps*poids) %>%
+      group_by(date) %>%
+      mutate(serie_tot = sum(serie, na.rm = T),
+             reps_tot = sum(serie*reps, na.rm = T),
+             poids_total = sum(poids_total, na.rm = T),
+             max = round(poids / (1.0279 - (0.0278*reps)),1)) %>%
+      top_n(1, max) %>%
+      ungroup() %>%
       arrange(date) %>%
-      mutate(evol = round((max - lag(max))/max,3),
+      mutate(evol = round((max - lag(max))/max,2),
              evol = ifelse(is.na(evol), 0, evol)) %>%
+      select(-c(exercice)) %>%
       arrange(desc(date))
 
     reactable(data_plot_ex, columns = list(
@@ -264,7 +292,8 @@ server = function(input, output){
         },
         format = colFormat(percent = TRUE)
       )
-    ))
+    ),
+    defaultPageSize = 10)
 
   })
 

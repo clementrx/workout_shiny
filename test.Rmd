@@ -6,36 +6,33 @@ editor_options:
 ---
 
 ```{r}
-path <- here("test.xlsx")
+path <- here("test2.xlsx")
 df <- import_fichier(path)
 
 
 ```
 
 ```{r}
-
-content <- df %>%
-      group_by(exercice) %>%
-      summarise(min_poids = min(poids, na.rm = T),
-                mean_poids = mean(poids, na.rm = T),
-                max_poids = max(poids, na.rm = T),
-                min_serie = min(serie, na.rm = T),
-                mean_serie = mean(serie, na.rm = T),
-                max_serie = max(serie, na.rm = T)) %>% 
-  ungroup()
-
+# nb ex
+length(unique(df$exercice))
+# nb series
+sum(df$serie)
+#nb poids
+sum(df$poids*df$serie*df$reps)
 ```
 
+
 ```{r}
-
-time_content <- df %>% 
-  group_by(date) %>% 
-  summarise(exercices = n_distinct(exercice),
+# nb serei/exercice/charge time
+time_content <- df %>%
+  mutate(poids_total = serie*reps*poids) %>% 
+  group_by(date) %>%
+  summarise(exercices = n_distinct(exercice, na.rm = T),
             series = sum(serie, na.rm = T),
-            poids = sum(poids, na.rm = T)) %>% 
-  ungroup() %>% 
-  pivot_longer(!c(date, poids), names_to = 'gr', values_to = 'value')
-
+            repetitions = sum(serie*reps, na.rm = T),
+            poids = sum(poids_total, na.rm = T)) %>%
+      ungroup() %>%
+      pivot_longer(!c(date, poids), names_to = 'gr', values_to = 'value') 
 
 hc <- highchart()%>%
   hc_xAxis(type = "datetime", labels = list(format = '{value:%m/%d}')) %>%
@@ -55,9 +52,37 @@ hc
 
 
 ```{r}
+# statistiques
+content <- df %>%
+      group_by(exercice, date) %>%
+      mutate(serie_tot = sum(serie, na.rm = T),
+             reps_tot = sum(serie*reps, na.rm = T)) %>% 
+  ungroup() %>% 
+  group_by(exercice) %>% 
+      summarise(min_poids = min(poids, na.rm = T),
+                mean_poids = mean(poids, na.rm = T),
+                max_poids = max(poids, na.rm = T),
+                min_serie = min(serie_tot, na.rm = T),
+                mean_serie = mean(serie_tot, na.rm = T),
+                max_serie = max(serie_tot, na.rm = T)) %>% 
+  ungroup()
 
-exdf <- df %>% filter(exercice == 'DC') %>% 
-   pivot_longer(!c(date, exercice, poids), names_to = 'gr', values_to = 'value')
+```
+
+
+```{r}
+#analyse indiv
+exdf <- df %>% 
+  filter(exercice == 'Power snatch') %>% 
+  mutate(poids_total = serie*reps*poids) %>% 
+  group_by(date) %>%
+  summarise(exercices = n_distinct(exercice, na.rm = T),
+            serie_tot = sum(serie, na.rm = T),
+            reps_tot = sum(serie*reps, na.rm = T),
+            poids = sum(poids_total, na.rm = T)) %>%
+      ungroup() %>%
+      pivot_longer(!c(date, poids), names_to = 'gr', values_to = 'value') 
+   
 
 hc <- highchart()%>%
   hc_xAxis(type = "datetime", labels = list(format = '{value:%m/%d}')) %>%
@@ -68,21 +93,51 @@ showLastLabel=TRUE,
 opposite = FALSE),
 list(title = list(text = "Charges (Kg)"),
 labels = list(format = "{value}"),showLastLabel = FALSE, opposite = TRUE)) %>%
-# hc_plotOptions(column = list(stacking = "normal")) %>%
+hc_plotOptions(column = list(stacking = "normal")) %>%
 hc_add_series(exdf,type="column",hcaes(x=date,y=value, group = 'gr'),yAxis=0) %>%
 hc_add_series(exdf,type="line",hcaes(x=date,y=poids), yAxis = 1, name = 'Charge')
 hc
 ```
 
 ```{r}
-
-data_plot_ex <- df %>% filter(exercice == 'DC') %>% 
-      mutate(max = round(poids / (1.0279 - (0.0278*reps)),1)) %>%
+# resumer indiv
+data_plot_ex <- df %>% filter(exercice == 'Squat') %>% 
+  mutate(poids_total = serie*reps*poids) %>% 
+  group_by(date) %>% 
+  mutate(serie_tot = sum(serie, na.rm = T),
+         reps_tot = sum(serie*reps, na.rm = T),
+         poids_total = sum(poids_total, na.rm = T),
+         max = round(poids / (1.0279 - (0.0278*reps)),1)) %>%
+  top_n(1, max) %>% 
+  ungroup() %>% 
       arrange(date) %>%
       mutate(evol = round((max - lag(max))/max,2),
-             evol = ifelse(is.na(evol), 0, evol))
-
+             evol = ifelse(is.na(evol), 0, evol)) %>% 
+  select(-c(exercice))
+  
+  
 ```
+
+```{r}
+# calcul des max
+ averages <- df %>%
+      group_by(exercice, reps) %>%
+      summarise(max = max(poids, na.rm = T)) %>%
+      ungroup() %>%
+      mutate(max_estimated = round(max / (1.0279 - (0.0278*reps)),1)) %>%
+      group_by(exercice) %>%
+      summarise(max = max(max_estimated, na.rm = T)) %>%
+      ungroup() %>%
+      mutate('90%' = max*0.9,
+             '80%' = max*0.8,
+             '70%' = max*0.7,
+             '60%' = max*0.6,
+             '50%' = max*0.5,
+             '40%' = max*0.4,
+             '30%' = max*0.3,
+      )
+```
+
 
 ```{r}
 
